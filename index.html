@@ -1,0 +1,107 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <style>
+    body { font-family: Arial; background:#f4f4f4; display:flex; justify-content:center; }
+    .container { background:white; margin-top:50px; padding:20px; width:400px; border-radius:10px; }
+    li { display:flex; justify-content:space-between; margin:10px 0; }
+    .completed { text-decoration: line-through; color:gray; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Task Manager</h2>
+
+  <form id="form">
+    <input id="input" placeholder="Enter task" required />
+    <button>Add</button>
+  </form>
+
+  <p id="status"></p>
+
+  <ul id="list"></ul>
+</div>
+
+<script>
+const API = 'http://localhost:5000/tasks';
+
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const list = document.getElementById('list');
+const status = document.getElementById('status');
+
+async function fetchTasks() {
+  status.textContent = 'Loading...';
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+    render(data);
+    status.textContent = '';
+  } catch (err) {
+    status.textContent = 'Error loading tasks';
+  }
+}
+
+function render(tasks) {
+  list.innerHTML = '';
+
+  tasks.forEach(task => {
+    const li = document.createElement('li');
+
+    const span = document.createElement('span');
+    span.textContent = task.title;
+    if (task.completed) span.classList.add('completed');
+
+    const completeBtn = document.createElement('button');
+    completeBtn.textContent = '✔';
+    completeBtn.onclick = () => toggleTask(task.id);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑';
+    deleteBtn.onclick = () => deleteTask(task.id);
+
+    li.append(span, completeBtn, deleteBtn);
+    list.appendChild(li);
+  });
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  try {
+    await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: input.value })
+    });
+
+    input.value = '';
+    fetchTasks();
+  } catch {
+    status.textContent = 'Error adding task';
+  }
+});
+
+async function toggleTask(id) {
+  await fetch(`${API}/${id}`, { method: 'PATCH' });
+  fetchTasks();
+}
+
+async function deleteTask(id) {
+  await fetch(`${API}/${id}`, { method: 'DELETE' });
+  fetchTasks();
+}
+
+fetchTasks();
+</script>
+
+</body>
+</html>
+
+
